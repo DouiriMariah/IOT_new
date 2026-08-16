@@ -1,13 +1,22 @@
-# Préparation de la VM hôte (nested virtualization + disque)
+# Préparation de la VM hôte
 
-Ce projet doit tourner dans une VM VirtualBox. Cette VM elle-même
-héberge des VM imbriquées (Vagrant/VirtualBox pour p1 et p2), ce qui
-nécessite d'activer la virtualisation imbriquée et de disposer de
-suffisamment d'espace disque. Toutes les commandes ci-dessous
-s'exécutent **sur la machine hôte physique**, VM éteinte, sauf mention
-contraire.
+Ce projet doit tourner dans une VM (elle héberge elle-même les VM K3s
+de p1/p2 via Vagrant). Toutes les commandes ci-dessous s'exécutent
+**sur la machine hôte physique**, VM éteinte, sauf mention contraire.
 
-## 1. Éteindre la VM proprement
+## 1. Provider Vagrant utilisé : libvirt/QEMU (émulation logicielle)
+
+p1 et p2 utilisent le provider `libvirt` avec `driver = "qemu"`
+(émulation logicielle pure, sans accélération matérielle). C'est un
+choix délibéré : sur un hôte déjà virtualisé, toute virtualisation
+**matérielle imbriquée** (VirtualBox nested-hw-virt, KVM) s'est révélée
+instable ici (jusqu'au plantage complet de la VM hôte). L'émulation
+logicielle est plus lente mais fiable.
+
+**Conséquence pratique : pas besoin d'activer la virtualisation
+imbriquée sur l'hôte.** Seuls la RAM et le disque comptent.
+
+## 2. Éteindre la VM proprement
 
 Depuis un terminal dans la VM :
 
@@ -15,18 +24,22 @@ Depuis un terminal dans la VM :
 sudo poweroff
 ```
 
-## 2. Activer la virtualisation imbriquée (nested VT-x/AMD-V)
+## 3. Allouer assez de RAM et de CPU
 
-Sur l'hôte :
+Sur l'hôte (VM éteinte) :
 
 ```bash
-VBoxManage list vms                              # repérer le nom exact de la VM
-VBoxManage modifyvm "<NOM_VM>" --nested-hw-virt on
-VBoxManage modifyvm "<NOM_VM>" --memory 6144      # RAM en Mo (6 Go mini recommandé)
-VBoxManage modifyvm "<NOM_VM>" --cpus 4           # 2 CPU minimum, 4 conseillé
+VBoxManage list vms                          # repérer le nom exact de la VM
+VBoxManage modifyvm "<NOM_VM>" --memory 8192  # 8 Go recommandé (6 Go mini)
+VBoxManage modifyvm "<NOM_VM>" --cpus 4       # 4 CPU recommandé (2 mini)
 ```
 
-## 3. Agrandir le disque virtuel (.vdi)
+Chaque VM K3s (p1 : 2 VM, p2 : 1 VM) est configurée avec 2048 Mo de
+RAM dans les Vagrantfile — l'émulation logicielle laisse moins de
+marge à K3s qu'une VM accélérée, d'où cette allocation plus généreuse
+que le minimum suggéré par le sujet (512-1024 Mo).
+
+## 4. Agrandir le disque virtuel (.vdi)
 
 Sur l'hôte :
 
@@ -38,11 +51,11 @@ VBoxManage modifymedium disk "/chemin/exact/vers/le/disque.vdi" --resize 40960
 `40960` = taille cible en **Mo** (ici 40 Go). Ne fonctionne que sur un
 disque au format VDI en allocation dynamique.
 
-## 4. Étendre la partition et le système de fichiers (dans la VM)
+## 5. Étendre la partition et le système de fichiers (dans la VM)
 
 Une fois la VM redémarrée avec le disque agrandi, la partition et le
-système de fichiers ne grandissent pas automatiquement : il faut les
-étendre manuellement. Layout actuel de cette VM (table GPT) :
+système de fichiers ne grandissent pas automatiquement. Layout GPT
+type :
 
 ```
 /dev/sda1  bios_grub
@@ -50,19 +63,37 @@ système de fichiers ne grandissent pas automatiquement : il faut les
 /dev/sda3  ext4, racine (/)          <- partition à étendre
 ```
 
-Commandes à lancer **dans la VM**, après redémarrage :
-
 ```bash
 sudo apt-get install -y cloud-guest-utils   # fournit growpart
-sudo growpart /dev/sda 3                    # étend la partition 3 jusqu'au bout du disque
-sudo resize2fs /dev/sda3                    # étend le système de fichiers ext4
-df -h /                                     # vérifier le nouvel espace disponible
+sudo growpart /dev/sda 3
+sudo resize2fs /dev/sda3
+df -h /
 ```
 
-## 5. Vérifier que tout est prêt
+## 6. Installer les outils (dans la VM)
 
 ```bash
-egrep -c '(vmx|svm)' /proc/cpuinfo   # doit être > 0 (nested virt active)
-free -h                              # RAM disponible
-df -h /                              # espace disque disponible
+# Vagrant
+wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt-get update && sudo apt-get install -y vagrant
+
+# libvirt / QEMU + plugin Vagrant
+sudo apt-get install -y qemu-kvm libvirt-daemon-system libvirt-clients virtinst libvirt-dev build-essential pkg-config ruby-dev
+sudo usermod -aG libvirt,kvm "$USER"
+sudo systemctl enable --now libvirtd
+vagrant plugin install vagrant-libvirt
+```
+
+Après le `usermod`, une nouvelle session (reconnexion) est nécessaire
+pour que l'appartenance aux groupes `libvirt`/`kvm` prenne effet — ou
+utilisez `sg libvirt -c "<commande>"` en attendant.
+
+## 7. Vérifier que tout est prêt
+
+```bash
+free -h                              # RAM disponible (8 Go visés)
+df -h /                              # espace disque disponible (40 Go visés)
+vagrant plugin list | grep libvirt   # plugin installé
+virsh -c qemu:///system list --all   # accès libvirt fonctionnel
 ```

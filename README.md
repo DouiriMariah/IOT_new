@@ -15,7 +15,11 @@ Login utilisé : **amattei**
 ## Prérequis (sur la machine hôte / VM d'évaluation)
 
 - [Vagrant](https://www.vagrantup.com/) (>= 2.3)
-- [VirtualBox](https://www.virtualbox.org/) (provider utilisé par les Vagrantfile)
+- Provider Vagrant : **libvirt/QEMU** (plugin `vagrant-libvirt`), utilisé
+  en émulation logicielle pure (`driver = "qemu"`) plutôt que VirtualBox
+  — voir [HOST-SETUP.md](HOST-SETUP.md) pour l'installation complète et
+  le pourquoi de ce choix. `vagrant up` fonctionne tel quel une fois le
+  provider installé, sans argument `--provider` à passer.
 - Pour la partie 3 uniquement : `p3/scripts/install.sh` installe lui-même
   Docker, kubectl, K3d et le CLI Argo CD (voir plus bas).
 
