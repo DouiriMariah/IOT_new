@@ -1,0 +1,32 @@
+# frozen_string_literal: true
+#
+# Inception-of-Things - Part 2
+# ------------------------------------------------------------------
+# One VM (amatteiS - 192.168.56.110) running K3s in server mode.
+# Once K3s is up, the provisioning script deploys three small web
+# applications and an Ingress that routes on the Host header:
+#   app1.com -> app1   app2.com -> app2 (3 replicas)   default -> app3
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "debian/bookworm64"
+  config.vm.box_check_update = false
+  config.ssh.insert_key = true
+
+  config.vm.define "amatteiS" do |node|
+    node.vm.hostname = "amatteiS"
+    node.vm.network "private_network", ip: "192.168.56.110"
+
+    node.vm.provider "virtualbox" do |vb|
+      vb.name   = "amatteiS"
+      vb.memory = 1024
+      vb.cpus   = 1
+      vb.linked_clone = true
+    end
+
+    # confs/ (k8s manifests) is synced automatically along with the
+    # rest of this folder under /vagrant on the guest.
+    node.vm.provision "shell",
+      path: "scripts/setup_server.sh",
+      env: { "NODE_IP" => "192.168.56.110" }
+  end
+end

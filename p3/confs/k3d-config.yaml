@@ -1,0 +1,14 @@
+# K3d cluster definition for Inception-of-Things - Part 3.
+# Maps host port 8888 to nodePort 30888 on the single server node, so
+# the wil42/playground app (Service defined in ../manifests/) can be
+# reached directly with: curl http://localhost:8888/
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: iot-cluster
+servers: 1
+agents: 0
+ports:
+  - port: 8888:30888
+    nodeFilters:
+      - server:0

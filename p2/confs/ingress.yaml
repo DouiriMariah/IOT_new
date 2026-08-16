@@ -1,0 +1,38 @@
+# Routes on the Host header, served by the Traefik controller bundled
+# with K3s:
+#   Host: app1.com -> app1
+#   Host: app2.com -> app2
+#   anything else  -> app3 (defaultBackend)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apps-ingress
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  defaultBackend:
+    service:
+      name: app3
+      port:
+        number: 80
+  rules:
+    - host: app1.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app1
+                port:
+                  number: 80
+    - host: app2.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app2
+                port:
+                  number: 80

@@ -1,0 +1,6 @@
+.vagrant/
+*.log
+node-token
+
+# Document de cours (propriété de l'école) : pas de diffusion sur un repo public
+en.subject.pdf

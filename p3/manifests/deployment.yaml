@@ -1,0 +1,25 @@
+# Deployed into the "dev" namespace by Argo CD.
+# Change the image tag between v1 <-> v2 to demonstrate the CD pipeline
+# (see root README.md, section "Partie 3 - changer de version").
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: playground
+  namespace: dev
+  labels:
+    app: playground
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: playground
+  template:
+    metadata:
+      labels:
+        app: playground
+    spec:
+      containers:
+        - name: playground
+          image: wil42/playground:v1
+          ports:
+            - containerPort: 8888
