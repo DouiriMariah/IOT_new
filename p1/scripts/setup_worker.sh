@@ -11,6 +11,13 @@ IFACE=$(ip -o -4 addr show | awk -v ip="${NODE_IP}" '$4 ~ "^"ip"/" {print $2; ex
 # The Vagrantfile's "file" provisioner uploads the server's join token
 # to /tmp/node-token over SSH (see p1/Vagrantfile) before this script runs.
 K3S_TOKEN=$(cat /tmp/node-token)
+if [ -z "${K3S_TOKEN}" ]; then
+  echo "FATAL: /tmp/node-token is empty - amatteiS's token wasn't ready" \
+       "when this file was uploaded. This should not happen with" \
+       "VAGRANT_NO_PARALLEL forced in the Vagrantfile; if it does," \
+       "run: vagrant provision amatteiS && vagrant provision amatteiSW" >&2
+  exit 1
+fi
 
 # See setup_server.sh: retry to absorb occasional TCG network blips.
 for attempt in 1 2 3 4 5; do

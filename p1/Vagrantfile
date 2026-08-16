@@ -18,6 +18,14 @@
 # it back in) rather than through a /vagrant synced folder - portable
 # across providers and needs no extra host-side setup (e.g. NFS).
 
+# amatteiSW needs amatteiS's K3s join token, produced by a trigger that
+# only runs once amatteiS is fully up (see below). vagrant-libvirt
+# brings machines up in PARALLEL by default, which would let amatteiSW
+# start before that token exists. Forcing sequential mode here means a
+# plain `vagrant up` (no flags) is always safe, regardless of provider
+# defaults or what the person running it remembers to type.
+ENV["VAGRANT_NO_PARALLEL"] = "1"
+
 NODES = {
   "amatteiS"  => { ip: "192.168.56.110", role: "server" },
   "amatteiSW" => { ip: "192.168.56.111", role: "agent"  },
