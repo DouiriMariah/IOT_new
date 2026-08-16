@@ -11,7 +11,10 @@ k3d cluster create --config "${ROOT}/confs/k3d-config.yaml"
 kubectl apply -f "${ROOT}/confs/argocd-namespace.yaml"
 kubectl apply -f "${ROOT}/confs/dev-namespace.yaml"
 
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+# --server-side: Argo CD's CRDs (e.g. applicationsets.argoproj.io) are
+# too large for the "last-applied-configuration" annotation a regular
+# `kubectl apply` writes (256KB limit); server-side apply avoids it.
+kubectl apply --server-side --force-conflicts -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 echo "Waiting for Argo CD to become available..."
 kubectl -n argocd wait --for=condition=available --timeout=300s deployment/argocd-server
