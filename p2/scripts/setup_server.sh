@@ -2,6 +2,11 @@
 # Inception-of-Things - Part 2 - K3s server + 3 apps behind Ingress.
 set -euxo pipefail
 
+# See p1/scripts/setup_server.sh: this box's default DNS servers are
+# unreachable from this network and cause intermittent resolution
+# failures on every curl/apt call below.
+printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+
 # The minimal Debian box ships without curl.
 export DEBIAN_FRONTEND=noninteractive
 command -v curl >/dev/null 2>&1 || (apt-get update -qq && apt-get install -y -qq curl)

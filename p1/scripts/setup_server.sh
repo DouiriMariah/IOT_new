@@ -2,6 +2,12 @@
 # Inception-of-Things - Part 1 - K3s server (control-plane) provisioning.
 set -euxo pipefail
 
+# generic/debian12's default DNS servers (4.2.2.x) are unreachable from
+# this network and cause intermittent "Could not resolve host" failures
+# on every curl/apt call below. Public resolvers fix it at the root
+# instead of just retrying around a broken lookup.
+printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+
 # The minimal Debian box ships without curl.
 export DEBIAN_FRONTEND=noninteractive
 command -v curl >/dev/null 2>&1 || (apt-get update -qq && apt-get install -y -qq curl)

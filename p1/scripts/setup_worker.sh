@@ -2,6 +2,10 @@
 # Inception-of-Things - Part 1 - K3s agent (worker) provisioning.
 set -euxo pipefail
 
+# See setup_server.sh: this box's default DNS servers are unreachable
+# from this network and cause intermittent resolution failures.
+printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+
 # The minimal Debian box ships without curl.
 export DEBIAN_FRONTEND=noninteractive
 command -v curl >/dev/null 2>&1 || (apt-get update -qq && apt-get install -y -qq curl)
