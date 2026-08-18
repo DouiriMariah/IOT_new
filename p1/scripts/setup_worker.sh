@@ -19,9 +19,19 @@ if [ -z "${K3S_TOKEN}" ]; then
   exit 1
 fi
 
-# See setup_server.sh: retry to absorb occasional TCG network blips.
-for attempt in 1 2 3 4 5; do
-  if curl -sfL --retry 3 --retry-delay 3 https://get.k3s.io | \
+# Wait for real internet connectivity before even trying to install -
+# right after boot, the network can take a few seconds to come up.
+for i in $(seq 1 30); do
+  curl -sf --max-time 5 -o /dev/null https://get.k3s.io && break
+  sleep 2
+done
+
+# See setup_server.sh: retry hard to absorb TCG network blips. Up to
+# 10 attempts with growing backoff (5s, 10s, ... capped at 30s) and a
+# bounded per-attempt timeout so one stuck attempt can't stall the rest.
+for attempt in $(seq 1 10); do
+  if timeout 180 curl -sfL --retry 5 --retry-delay 5 --retry-all-errors \
+      --connect-timeout 15 https://get.k3s.io | \
     K3S_URL="https://${SERVER_IP}:6443" \
     K3S_TOKEN="${K3S_TOKEN}" \
     INSTALL_K3S_EXEC="agent \
@@ -30,9 +40,9 @@ for attempt in 1 2 3 4 5; do
     sh -; then
     break
   fi
-  echo "k3s install attempt ${attempt} failed, retrying in 5s..." >&2
-  sleep 5
-  [ "$attempt" -lt 5 ] || exit 1
+  echo "k3s install attempt ${attempt} failed, retrying..." >&2
+  [ "$attempt" -lt 10 ] || exit 1
+  sleep $(( attempt * 5 > 30 ? 30 : attempt * 5 ))
 done
 
 echo "K3s agent joined ${SERVER_IP} from ${NODE_IP} (interface ${IFACE})"
