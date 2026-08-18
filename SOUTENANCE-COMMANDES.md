@@ -24,6 +24,14 @@ vagrant ssh amatteiSW -c "hostname && ip a show eth1"
 vagrant ssh amatteiS -c "sudo k3s kubectl get nodes -o wide"
 ```
 
+### Nettoyage p1
+
+> À faire avant de lancer p2 — sinon RAM insuffisante pour les deux.
+
+```bash
+vagrant halt
+```
+
 ---
 
 ## p2
@@ -41,6 +49,14 @@ vagrant ssh amatteiS -c 'curl -s -H "Host: app2.com" http://localhost'
 vagrant ssh amatteiS -c 'curl -s http://localhost'
 vagrant ssh amatteiS -c "sudo k3s kubectl get ingress"
 vagrant ssh amatteiS -c "sudo k3s kubectl describe ingress apps-ingress"
+```
+
+### Nettoyage p2
+
+> À faire avant de lancer p3 — même raison.
+
+```bash
+vagrant halt
 ```
 
 ---
@@ -79,20 +95,23 @@ kubectl get pods -n dev
 curl http://localhost:8888/
 ```
 
----
-
-## Nettoyage / dépannage
+### Nettoyage p3
 
 ```bash
-# arrêter une partie sans la supprimer
-cd p1 && vagrant halt
+k3d cluster delete iot-cluster
+```
 
+---
+
+## Reset complet / dépannage
+
+```bash
 # tout supprimer et repartir de zéro
 cd p1 && vagrant destroy -f && rm -rf .vagrant .node-token
 cd ../p2 && vagrant destroy -f && rm -rf .vagrant
 k3d cluster delete iot-cluster
 
-# état de tout
+# état de tout (avant de relancer quoi que ce soit)
 virsh -c qemu:///system list --all
 k3d cluster list
 docker ps -a
