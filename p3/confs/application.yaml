@@ -1,5 +1,6 @@
-# Argo CD Application: watches p3/manifests/ on the public GitHub repo
-# and keeps the "dev" namespace continuously in sync with it (GitOps).
+# Argo CD Application: watches manifests/ on the dedicated public
+# GitHub repo for part 3, and keeps the "dev" namespace continuously
+# in sync with it (GitOps).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,9 +9,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/DouiriMariah/IOT_new.git
+    repoURL: https://github.com/DouiriMariah/Iot_amattei.git
     targetRevision: HEAD
-    path: p3/manifests
+    path: manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: dev

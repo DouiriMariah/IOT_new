@@ -94,6 +94,7 @@ kubectl -n argocd annotate application playground argocd.argoproj.io/refresh=har
 kubectl get pods -n dev
 curl http://localhost:8888/
 ```
+Pour montrer que ca se syncro bien, dans le fichier deployment.yaml change v2 en v1 et push sur git.
 
 ### Nettoyage p3
 
